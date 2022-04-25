@@ -1,33 +1,39 @@
 package AddressBookDay28;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVWriter;
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Scanner;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+
 public class AddressBook {
 
-	
+	/**
+	 * declaring variables
+	 */
 	static String name;
 	static boolean is_Running = false;
-	
-	
+
 	public HashMap<String, ContactInfo> addressBook = new HashMap<>();
-	
+
 	/**
 	 * creating ArrayList of ContactInfo to store all the contact details
 	 */
 	public ArrayList<ContactInfo> listOfContacts = new ArrayList<>();
 
-	/**
-	 * Main method for manipulation AddressBook using csv and json library here it
-	 * throws IOException, CsvValidation Exception and ParseException
-	 * 
-	 * @param args - Default Java param (Not used)
-	 */
-	public static void main(String[] args) throws IOException, CompletionException {
-		
+	
+	public static void main(String[] args) throws IOException, CsvValidationException, ParseException {
+
 		/**
 		 * creating HashMap for multipleAddressBook
 		 */
@@ -47,18 +53,22 @@ public class AddressBook {
 		multiAddressBook.put("AB3", addressBookObj3);
 
 		obj.createContact(multiAddressBook);
+		/**
+		 * read simple text file
+		 */
 		obj.readFromFile();
-
+		/**
+		 * read CSV file
+		 */
+		obj.readFromCSVFile();
+		/**
+		 * read JSON file
+		 */
+		obj.readJSONFile();
 	}
 
-	/**
-	 * create method createContact using the HashMap it will search the particular
-	 * values from the contact if it will not found then throws exception
-	 * @param multiAddressBook
-	 * @throws IOException
-	 * @throws ParseException
-	 */
-	public void createContact(HashMap<String, AddressBook> multiAddressBook) throws IOException {
+	
+	public void createContact(HashMap<String, AddressBook> multiAddressBook) throws IOException, ParseException {
 
 		/**
 		 * Java BufferedWriter class is used to provide buffering for Writer instances. 
@@ -66,13 +76,13 @@ public class AddressBook {
 		 * for providing the efficient writing of single arrays, characters, and strings.
 		 */
 		BufferedWriter bw1 = new BufferedWriter(
-				new FileWriter("D:\\AddressBookDay-28\\src\\main\\java.txt"));
+				new FileWriter("D:\\AddressBookDay-28\\src\\main\\java.txt\\"));
 		BufferedWriter bw2 = new BufferedWriter(
 				new FileWriter("D:\\AddressBookDay-28\\src\\main\\java.txt"));
 		BufferedWriter bw3 = new BufferedWriter(
-				new FileWriter("\"C:\\Users\\user\\Desktop\\CSV\\AddressBook33.txt\""));
+				new FileWriter("D:\\AddressBookDay-28\\src\\main\\jav.txt"));
 
-		/**
+		 /**
 		  * create instance of CSVWriter class taking filewriter object as parameter 
 		  * in parameter passing the csv path
 		  */
@@ -91,15 +101,27 @@ public class AddressBook {
 		csv2.writeNext(header);
 		csv3.writeNext(header);
 
+		Gson gson = new Gson();
+
+		FileWriter jsonFW1 = new FileWriter("D:\\AddressBookDay-28\\src\\main\\java.json");
+		FileWriter jsonFW2 = new FileWriter("D:\\AddressBookDay-28\\src\\main\\java.json");
+		FileWriter jsonFW3 = new FileWriter("D:\\AddressBookDay-28\\src\\main\\java.json");
+
+		JSONArray outerObj1 = new JSONArray();
+		JSONArray outerObj2 = new JSONArray();
+		JSONArray outerObj3 = new JSONArray();
+
+		JSONObject jsonObject = new JSONObject();
+
 		while (!is_Running) {
 			Scanner scanner = new Scanner(System.in);
 			System.out.println("Enter 1 ,2 ,3 for diff addressBook and 4 to exit");
 			int option = scanner.nextInt();
 			String key = switch (option) {
-			case 1 :"AB1";
-			case 2 :"AB2";
-			case 3 : "AB3";
-			default : null;
+			case 1 -> "AB1";
+			case 2 -> "AB2";
+			case 3 -> "AB3";
+			default -> null;
 			};
 			if (option == 4)
 				break;
@@ -121,12 +143,15 @@ public class AddressBook {
 				name = contact.firstName.toUpperCase(Locale.ROOT) + " " + contact.lastName.toUpperCase(Locale.ROOT);
 				
 				/**
-				 *  Java Streams is used to check if any Duplicate Contact in the AddresBook
+				 *  Java Streams is used to check any Duplicate entries
 				 */
 				if (multiAddressBook.get(key).addressBook.keySet().stream().noneMatch(k -> k.equals(name))) { 
 					
 					multiAddressBook.get(key).addressBook.put(name, contact);
-					multiAddressBook.get(key).listOfContacts.add(contact); // contact already exist in the addressBook
+					multiAddressBook.get(key).listOfContacts.add(contact); 
+					/**
+					 *  contact already exist in the addressBook
+					 */
 					multiAddressBook.get(key).addressBook.get(name).displayContactInfo();
 					String outputData = multiAddressBook.get(key).addressBook.get(name).showContact();
 					String csvOutputString = multiAddressBook.get(key).addressBook.get(name).showContactCSV();
@@ -135,18 +160,25 @@ public class AddressBook {
 					 * CSV Data can be splitted into a comma separated values 
 					 */
 					String[] csvData = csvOutputString.split(",");
+					String json = gson.toJson(contact);
+					JSONParser parser = new JSONParser();
+					JSONObject strToJsonObj = (JSONObject) parser.parse(json);
+
 					switch (option) {
 					case 1 -> {
 						bw1.write(outputData);
 						csv1.writeNext(csvData);
+						outerObj1.add(strToJsonObj);
 					}
 					case 2 -> {
 						bw2.write(outputData);
 						csv2.writeNext(csvData);
+						outerObj2.add(strToJsonObj);
 					}
 					case 3 -> {
 						bw3.write(outputData);
 						csv3.writeNext(csvData);
+						outerObj3.add(strToJsonObj);
 					}
 					}
 
@@ -170,6 +202,11 @@ public class AddressBook {
 				sortContactsByZip(multiAddressBook);
 			}
 		}
+
+		jsonFW1.write(outerObj1.toString());
+		jsonFW2.write(outerObj2.toString());
+		jsonFW3.write(outerObj3.toString());
+
 		bw1.close();
 		bw2.close();
 		bw3.close();
@@ -177,6 +214,32 @@ public class AddressBook {
 		csv1.close();
 		csv2.close();
 		csv3.close();
+
+		jsonFW1.close();
+		jsonFW2.close();
+		jsonFW3.close();
+	}
+
+	/**
+	 * Method for reading JSON File
+	 * 
+	 * @throws IOException
+	 * @throws ParseException
+	 */
+	public void readJSONFile() throws IOException, ParseException {
+		System.out.println("--------------------------------------------------------------\n Read from JSON File: ");
+		JSONParser parser = new JSONParser();
+		JSONArray jsonArray1 = (JSONArray) parser
+				.parse(new FileReader("D:\\AddressBookDay-28\\src\\main\\java.json"));
+		System.out.println(jsonArray1.toJSONString());
+
+		JSONArray jsonArray2 = (JSONArray) parser
+				.parse(new FileReader("D:\\AddressBookDay-28\\src\\main\\java.json"));
+		System.out.println(jsonArray2.toJSONString());
+
+		JSONArray jsonArray3 = (JSONArray) parser
+				.parse(new FileReader("D:\\AddressBookDay-28\\src\\main\\java.json"));
+		System.out.println(jsonArray3.toJSONString());
 	}
 
 	/**
@@ -186,7 +249,8 @@ public class AddressBook {
 	 * @throws CsvValidationException
 	 */
 	public void readFromCSVFile() throws IOException, CompletionException {
-		System.out.println("\nReading from CSV files:  \n");
+		System.out
+				.println("--------------------------------------------------------------\nReading from CSV files:  \n");
 		String[] contactInfo;
 		CSVReader csvR1 = new CSVReader(
 				new FileReader("D:\\AddressBookDay-28\\src\\main\\java.csv"));
@@ -223,7 +287,8 @@ public class AddressBook {
 	 */
 	public void readFromFile() throws IOException {
 		String contact;
-		System.out.println("\nReading from File IO method: \n");
+		System.out.println(
+				"--------------------------------------------------------------\nReading from File IO method: \n");
 		System.out.println("List of Contacts in AddressBook 1 : ");
 		System.out.println("firstName, lastName, address, city, state, zipcode, phoneNo, email");
 		BufferedReader br1 = new BufferedReader(
@@ -241,7 +306,7 @@ public class AddressBook {
 		System.out.println("\nList of Contacts in AddressBook 3 : ");
 		System.out.println("firstName, lastName, address, city, state, zipcode, phoneNo, email");
 		BufferedReader br3 = new BufferedReader(
-				new FileReader("\"C:\\Users\\user\\Desktop\\CSV\\AddressBook33.txt\""));
+				new FileReader("D:\\AddressBookDay-28\\src\\main\\java.txt"));
 		while ((contact = br3.readLine()) != null) {
 			System.out.println(contact);
 		}
@@ -251,7 +316,6 @@ public class AddressBook {
 	 * Method to delete an existing contact
 	 */
 	public void deleteContact() {
-		int xc;
 		Scanner scanner = new Scanner(System.in);
 		System.out.println("Enter the first and last name of the contact you want to delete from AddressBook: ");
 		String name = scanner.nextLine().toUpperCase(Locale.ROOT);
@@ -275,31 +339,31 @@ public class AddressBook {
 			int number = sc.nextInt();
 			sc.nextLine();
 			switch (number) {
-			case 1 : {
+			case 1 -> {
 				System.out.println("Enter new Address");
 				addressBook.get(name).setAddress(sc.nextLine());
 			}
-			case 2 : {
+			case 2 -> {
 				System.out.println("Enter new City");
 				addressBook.get(name).setCity(sc.nextLine());
 			}
-			case 3 : {
+			case 3 -> {
 				System.out.println("Enter new State");
 				addressBook.get(name).setState(sc.nextLine());
 			}
-			case 4 : {
+			case 4 -> {
 				System.out.println("Enter new ZipCode");
 				addressBook.get(name).setZipcode(sc.nextLine());
 			}
-			case 5 : {
+			case 5 -> {
 				System.out.println("Enter new Phone number");
 				addressBook.get(name).setPhoneNo(sc.nextLine());
 			}
-			case 6 : {
+			case 6 -> {
 				System.out.println("Enter new Email");
 				addressBook.get(name).setEmail(sc.nextLine());
 			}
-			default : System.out.println("Please input a valid number (1-6)");
+			default -> System.out.println("Please input a valid number (1-6)");
 			}
 			addressBook.get(name).displayContactInfo();
 		} else
@@ -307,7 +371,7 @@ public class AddressBook {
 	}
 
 	/**
-	 * Method for searching contacts based on city
+	 * Method for searching contacts based on city using HashMap
 	 */
 	public void searchContactBasedOnCity(HashMap<String, AddressBook> multiAddressBook) {
 
@@ -347,7 +411,7 @@ public class AddressBook {
 	/**
 	 * Method for sorting contacts based on Person Name
 	 *
-	 * @param multiAddressBook HashMap containing all addressBooks is passed as a
+	 * @param multiAddressBook HashMap containing all addressBooks is passed as
 	 *                         parameter
 	 */
 	public void sortContactsByPersonName(HashMap<String, AddressBook> multiAddressBook) {
